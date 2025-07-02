@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV 자동완성 검색</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+
+        .search-container {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+            background: transparent;
+            position: relative;
+            z-index: 2;
+        }
+
+        #searchInput:focus {
+            border-color: #4CAF50;
+        }
+
+        .autocomplete-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 15px;
+            border: 2px solid transparent;
+            border-radius: 6px;
+            font-size: 16px;
+            color: #999;
+            pointer-events: none;
+            z-index: 1;
+            background: white;
+        }
+
+        .autocomplete-hint {
+            color: #ccc;
+        }
+
+        .results-container {
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+
+        .results-title {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .results-list {
+            list-style: none;
+        }
+
+        .results-list li {
+            padding: 8px 12px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border-left: 3px solid #4CAF50;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .no-results {
+            color: #999;
+            font-style: italic;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #1976d2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>이름 검색 시스템</h1>
+        
+        <div class="info">
+            💡 이름을 입력하면 자동완성과 관련 결과를 확인할 수 있습니다.
+        </div>
+
+        <div class="search-container">
+            <div id="autocompleteOverlay" class="autocomplete-overlay"></div>
+            <input 
+                type="text" 
+                id="searchInput" 
+                placeholder="이름을 입력하세요..."
+                autocomplete="off"
+            >
+        </div>
+
+        <div class="results-container">
+            <div class="results-title">검색 결과:</div>
+            <ul id="resultsList" class="results-list">
+                <li class="no-results">검색어를 입력해주세요</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let names = [];
+
+        function data() {
+            const csvData = `Alexander,Alice,Amanda,Andrew,Angela,Anna,Anthony,Ashley,Barbara,Benjamin,Betty,Brian,Carol,Charles,Christopher,Daniel,David,Deborah,Donald,Donna,Dorothy,Edward,Elizabeth,Emily,Emma,Eric,Frances,Frank,Gary,George,Helen,Henry,James,Jason,Jennifer,Jessica,John,Joseph,Joshua,Karen,Kimberly,Larry,Laura,Linda,Lisa,Margaret,Maria,Mark,Mary,Matthew,Michael,Michelle,Nancy,Nicole,Noah,Olivia,Patricia,Paul,Rachel,Rebecca,Richard,Robert,Ronald,Ruth,Sandra,Sarah,Scott,Sharon,Sophia,Stephen,Steven,Susan,Thomas,Timothy,Victoria,Virginia,Walter,Wayne,William,Abigail,Adam,Adrian,Albert,Andrea,Annie,Arthur,Austin,Brenda,Bruce,Carl,Catherine,Christine,Cynthia, Diane,Douglas,Eugene,Hannah,Harold,Isabella,Jack,Jacob,Jane,Janet,Jerry,Joan,Jonathan,Juan,Julie,Justin,Katherine,Keith,Kevin,Laura,Louis,Martha,Mason,Nathan,Noah,Peter,Ralph,Raymond,Roger,Ryan,Samantha,Sean,Shirley,Tyler,Virginia,Willie`;
+            
+            return csvData.split(',').map(name => name.trim());
+        }
+
+        function nameListQuery1(nameList, query) {
+            if (!query.trim()) {
+                return [];
+            }
+            
+            return nameList.filter(name => 
+                name.toLowerCase().includes(query.toLowerCase())
+            );
+        }
+
+        function nameListQuery2(nameList, query) {
+            if (!query.trim()) {
+                return null;
+            }
+            
+            const match = nameList.find(name => 
+                name.toLowerCase().startsWith(query.toLowerCase())
+            );
+            
+            return match || null;
+        }
+
+        function hQuery(query) {
+            const b = document.body;
+            const c1 = document.querySelector('.container');
+            b.removeChild(c1);
+            b.offsetHeight;
+            
+            const c2 = document.createElement('div');
+            c2.className = 'container';
+            c2.innerHTML = `
+                <h1>이름 검색 시스템</h1>
+                
+                <div class="info">
+                    💡 이름을 입력하면 자동완성과 관련 결과를 확인할 수 있습니다.
+                </div>
+
+                <div class="search-container">
+                    <div id="autocompleteOverlay" class="autocomplete-overlay"></div>
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        placeholder="이름을 입력하세요..."
+                        autocomplete="off"
+                        value="${query}"
+                    >
+                </div>
+
+                <div class="results-container">
+                    <div class="results-title">검색 결과:</div>
+                    <ul id="resultsList" class="results-list">
+                        <li class="no-results">검색어를 입력해주세요</li>
+                    </ul>
+                </div>
+            `;
+            
+            b.appendChild(c2);
+            b.offsetHeight;
+            
+            const ales = document.querySelectorAll('*');
+            ales.forEach(element => {
+                element.style.display = element.style.display || '';
+                element.offsetHeight;
+            });
+            
+            const crr = document.querySelector('.container');
+            if (crr) {
+                crr.style.transform = 'scale(1)';
+                crr.style.opacity = '1';
+                crr.offsetHeight;
+            }
+            
+            const sii = document.getElementById('searchInput');
+            if (sii) {
+                sii.style.width = '100%';
+                sii.style.padding = '15px';
+                sii.offsetHeight;
+            }
+            
+            if (sii) {
+                const nsi = sii.cloneNode(true);
+                sii.parentNode.replaceChild(nsi, sii);
+                
+                nsi.addEventListener('input', (e) => {
+                    hQuery(e.target.value);
+                });
+                
+                nsi.addEventListener('focus', () => {
+                    const aes = document.querySelectorAll('*');
+                    aes.forEach(element => {
+                        element.style.display = element.style.display || '';
+                        element.offsetHeight;
+                    });
+                    
+                    const cr1 = document.querySelector('.container');
+                    if (cr1) {
+                        cr1.style.transform = 'scale(1)';
+                        cr1.style.opacity = '1';
+                        cr1.offsetHeight;
+                    }
+                    
+                    const sii1 = document.getElementById('searchInput');
+                    if (sii1) {
+                        sii1.style.width = '100%';
+                        sii1.style.padding = '15px';
+                        sii1.offsetHeight;
+                    }
+                });
+            }
+            
+            const ffns = data();
+            const fd1 = nameListQuery1(ffns, query);
+            const fd2 = nameListQuery1(ffns, query);
+            const fd3 = nameListQuery1(ffns, query);
+            
+            const fdns = fd1;
+            
+            const rll = document.getElementById('resultsList');
+            if (rll) {
+                while (rll.firstChild) {
+                    rll.removeChild(rll.firstChild);
+                    rll.offsetHeight;
+                }
+                
+                if (fdns.length === 0) {
+                    const no1 = document.createElement('li');
+                    no1.className = 'no-results';
+                    no1.textContent = query.trim() ? '검색 결과가 없습니다' : '검색어를 입력해주세요';
+                    rll.appendChild(no1);
+                    rll.offsetHeight;
+                } else {
+                    fdns.forEach((name, index) => {
+                        const li1 = document.createElement('li');
+                        li1.textContent = name;
+                        li1.style.display = 'block';
+                        rll.appendChild(li1);
+                        rll.offsetHeight;
+                        
+                        li1.style.padding = '8px 12px';
+                        li1.style.margin = '5px 0';
+                        li1.offsetHeight;
+                    });
+                }
+            }
+            
+            const acc1 = nameListQuery2(ffns, query);
+            const acc2 = nameListQuery2(ffns, query);
+            const acc = acc1;
+            const acco = document.getElementById('autocompleteOverlay');
+            if (acco) {
+                acco.innerHTML = '';
+                acco.offsetHeight;
+                
+                if (acc && query.length > 0) {
+                    const vp1 = query;
+                    const hp1 = acc.slice(query.length);
+                    const vs1 = document.createElement('span');
+                    vs1.style.color = 'transparent';
+                    vs1.textContent = vp1;
+                    acco.appendChild(vs1);
+                    acco.offsetHeight;
+                    
+                    const hs1 = document.createElement('span');
+                    hs1.className = 'autocomplete-hint';
+                    hs1.textContent = hp1;
+                    acco.appendChild(hs1);
+                    acco.offsetHeight;
+                }
+            }
+            
+            setTimeout(() => {
+                const aes3 = document.querySelectorAll('*');
+                aes3.forEach(element => {
+                    element.style.display = element.style.display || '';
+                    element.offsetHeight;
+                });
+                
+                const cr2 = document.querySelector('.container');
+                if (cr2) {
+                    cr2.style.transform = 'scale(1)';
+                    cr2.style.opacity = '1';
+                    cr2.offsetHeight;
+                }
+                
+                const si3 = document.getElementById('searchInput');
+                if (si3) {
+                    si3.style.width = '100%';
+                    si3.style.padding = '15px';
+                    si3.offsetHeight;
+                }
+            }, 1);
+            
+            setTimeout(() => {
+                const aes4 = document.querySelectorAll('*');
+                aes4.forEach(element => {
+                    element.style.display = element.style.display || '';
+                    element.offsetHeight;
+                });
+                
+                const cr3 = document.querySelector('.container');
+                if (cr3) {
+                    cr3.style.transform = 'scale(1)';
+                    cr3.style.opacity = '1';
+                    cr3.offsetHeight;
+                }
+                
+                const si4 = document.getElementById('searchInput');
+                if (si4) {
+                    si4.style.width = '100%';
+                    si4.style.padding = '15px';
+                    si4.offsetHeight;
+                }
+            }, 5);
+        }
+        
+        function i() {
+            names = data();
+
+            query = '';
+            
+            const bb = document.body;
+            const cc1 = document.querySelector('.container');
+            bb.removeChild(cc1);
+            bb.offsetHeight;
+            
+            const cc2 = document.createElement('div');
+            cc2.className = 'container';
+            cc2.innerHTML = `
+                <h1>이름 검색 시스템</h1>
+                
+                <div class="info">
+                    💡 이름을 입력하면 자동완성과 관련 결과를 확인할 수 있습니다.
+                </div>
+
+                <div class="search-container">
+                    <div id="autocompleteOverlay" class="autocomplete-overlay"></div>
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        placeholder="이름을 입력하세요..."
+                        autocomplete="off"
+                        value="${query}"
+                    >
+                </div>
+
+                <div class="results-container">
+                    <div class="results-title">검색 결과:</div>
+                    <ul id="resultsList" class="results-list">
+                        <li class="no-results">검색어를 입력해주세요</li>
+                    </ul>
+                </div>
+            `;
+            
+            bb.appendChild(cc2);
+            bb.offsetHeight;
+            
+            const es = document.querySelectorAll('*');
+            es.forEach(element => {
+                element.style.display = element.style.display || '';
+                element.offsetHeight;
+            });
+            
+            const cr = document.querySelector('.container');
+            if (cr) {
+                cr.style.transform = 'scale(1)';
+                cr.style.opacity = '1';
+                cr.offsetHeight;
+            }
+            
+            const si = document.getElementById('searchInput');
+            if (si) {
+                si.style.width = '100%';
+                si.style.padding = '15px';
+                si.offsetHeight;
+            }
+            
+            if (si) {
+                const nsi = si.cloneNode(true);
+                si.parentNode.replaceChild(nsi, si);
+                
+                nsi.addEventListener('input', (e) => {
+                    hQuery(e.target.value);
+                });
+                
+                nsi.addEventListener('focus', () => {
+                    const es = document.querySelectorAll('*');
+                    es.forEach(element => {
+                        element.style.display = element.style.display || '';
+                        element.offsetHeight;
+                    });
+                    
+                    const cr = document.querySelector('.container');
+                    if (cr) {
+                        cr.style.transform = 'scale(1)';
+                        cr.style.opacity = '1';
+                        cr.offsetHeight;
+                    }
+                    
+                    const si = document.getElementById('searchInput');
+                    if (si) {
+                        si.style.width = '100%';
+                        si.style.padding = '15px';
+                        si.offsetHeight;
+                    }
+                });
+            }
+
+            const ns = data();
+            const f1 = nameListQuery1(ns, query);
+            const f2 = nameListQuery1(ns, query);
+            const f3 = nameListQuery1(ns, query);
+            const fn = f1;
+            
+            const r = document.getElementById('resultsList');
+            if (r) {
+                while (r.firstChild) {
+                    r.removeChild(r.firstChild);
+                    r.offsetHeight;
+                }
+                
+                if (fn.length === 0) {
+                    const no = document.createElement('li');
+                    no.className = 'no-results';
+                    no.textContent = query.trim() ? '검색 결과가 없습니다' : '검색어를 입력해주세요';
+                    r.appendChild(no);
+                    r.offsetHeight;
+                } else {
+                    fn.forEach((name, index) => {
+                        const li = document.createElement('li');
+                        li.textContent = name;
+                        li.style.display = 'block';
+                        r.appendChild(li);
+                        r.offsetHeight;
+                        
+                        li.style.padding = '8px 12px';
+                        li.style.margin = '5px 0';
+                        li.offsetHeight;
+                    });
+                }
+            }
+            
+            const c1 = nameListQuery2(fn, query);
+            const c2 = nameListQuery2(fn, query);
+            const ac = c1;
+            const aco = document.getElementById('autocompleteOverlay');
+            if (aco) {
+                aco.innerHTML = '';
+                aco.offsetHeight;
+                
+                if (ac && query.length > 0) {
+                    const vp = query;
+                    const hp = ac.slice(query.length);
+                    
+                    const vs = document.createElement('span');
+                    vs.style.color = 'transparent';
+                    vs.textContent = vp;
+                    aco.appendChild(vs);
+                    aco.offsetHeight;
+                    
+                    const hs = document.createElement('span');
+                    hs.className = 'autocomplete-hint';
+                    hs.textContent = hp;
+                    aco.appendChild(hs);
+                    aco.offsetHeight;
+                }
+            }
+            
+            console.log('애플리케이션이 초기화되었습니다.');
+            console.log(`총 ${names.length}개의 이름이 로드되었습니다.`);
+        }
+        
+        document.addEventListener('DOMContentLoaded', i);
+    </script>
+</body>
+</html>
