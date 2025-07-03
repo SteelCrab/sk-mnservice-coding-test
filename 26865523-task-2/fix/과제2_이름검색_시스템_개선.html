@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV 자동완성 검색</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+
+        .search-container {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+            background: transparent;
+            position: relative;
+            z-index: 2;
+        }
+
+        #searchInput:focus {
+            border-color: #4CAF50;
+        }
+
+        .autocomplete-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 15px;
+            border: 2px solid transparent;
+            border-radius: 6px;
+            font-size: 16px;
+            color: #999;
+            pointer-events: none;
+            z-index: 1;
+            background: white;
+        }
+
+        .autocomplete-hint {
+            color: #ccc;
+        }
+
+        .results-container {
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+
+        .results-title {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .results-list {
+            list-style: none;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .results-list li {
+            padding: 8px 12px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border-left: 3px solid #4CAF50;
+            color: #333;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .results-list li:hover {
+            background: #e8f5e8;
+        }
+
+        .results-list li.selected {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .no-results {
+            color: #999;
+            font-style: italic;
+            text-align: center;
+            padding: 20px;
+            cursor: default !important;
+        }
+
+        .no-results:hover {
+            background: #f8f9fa !important;
+        }
+
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #1976d2;
+        }
+
+        /* 모달 스타일 추가 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.show .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .modal-content {
+            line-height: 1.6;
+        }
+
+        .person-detail {
+            display: grid;
+            gap: 15px;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .detail-icon {
+            width: 40px;
+            height: 40px;
+            background: #4CAF50;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+        }
+
+        .detail-info {
+            flex: 1;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 2px;
+        }
+
+        .detail-value {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #4CAF50;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 성능 정보 표시 */
+        .performance-info {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .performance-info.show {
+            opacity: 1;
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 20px;
+            }
+
+            .modal {
+                margin: 20px;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>이름 검색 시스템</h1>
+        
+        <div class="info">
+            💡 이름을 입력하면 자동완성과 관련 결과를 확인할 수 있습니다. 결과를 클릭하면 상세 정보를 볼 수 있습니다.
+        </div>
+
+        <div class="search-container">
+            <div id="autocompleteOverlay" class="autocomplete-overlay"></div>
+            <input 
+                type="text" 
+                id="searchInput" 
+                placeholder="이름을 입력하세요..."
+                autocomplete="off"
+            >
+        </div>
+
+        <div class="results-container">
+            <div class="results-title">검색 결과:</div>
+            <ul id="resultsList" class="results-list">
+                <li class="no-results">검색어를 입력해주세요</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 성능 정보 표시 -->
+    <div id="performanceInfo" class="performance-info"></div>
+
+    <!-- 상세 정보 모달 -->
+    <div id="modalOverlay" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">상세 정보</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div id="modalContent" class="modal-content">
+                <div class="loading">정보를 불러오는 중입니다...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * 개선된 이름 검색 시스템
+         * 기존 기능을 유지하면서 성능 문제를 해결하고 새로운 기능을 추가
+         */
+        class ImprovedNameSearchSystem {
+            constructor() {
+                this.names = [];
+                this.filteredNames = [];
+                this.selectedIndex = -1;
+                this.searchTimeout = null;
+                this.currentQuery = '';
+                
+                // DOM 요소 캐싱
+                this.searchInput = document.getElementById('searchInput');
+                this.autocompleteOverlay = document.getElementById('autocompleteOverlay');
+                this.resultsList = document.getElementById('resultsList');
+                this.performanceInfo = document.getElementById('performanceInfo');
+                this.modalOverlay = document.getElementById('modalOverlay');
+                this.modalContent = document.getElementById('modalContent');
+                
+                this.init();
+            }
+
+            async init() {
+                try {
+                    await this.loadData();
+                    this.setupEventListeners();
+                    this.showPerformanceMessage('시스템 준비 완료');
+                } catch (error) {
+                    console.error('초기화 오류:', error);
+                    this.showPerformanceMessage('초기화 중 오류 발생');
+                }
+            }
+
+            /**
+             * 데이터 로딩 - CSV 파일 우선, 실패 시 내장 데이터 사용
+             */
+            async loadData() {
+                try {
+                    const response = await fetch('names.csv');
+                    if (response.ok) {
+                        const csvText = await response.text();
+                        this.names = this.parseCSV(csvText);
+                        console.log(`CSV에서 ${this.names.length}개 데이터 로드`);
+                    } else {
+                        throw new Error('CSV 파일 없음');
+                    }
+                } catch (error) {
+                    console.warn('CSV 로드 실패, 내장 데이터 사용:', error.message);
+                    this.names = this.getEmbeddedData();
+                }
+            }
+
+            /**
+             * CSV 파싱
+             */
+            parseCSV(csvText) {
+                const lines = csvText.trim().split('\n');
+                const headers = lines[0].split(',');
+                const names = [];
+
+                for (let i = 1; i < lines.length; i++) {
+                    const values = lines[i].split(',');
+                    const person = {};
+                    headers.forEach((header, index) => {
+                        person[header.trim()] = values[index]?.trim() || '';
+                    });
+                    names.push(person);
+                }
+
+                return names;
+            }
+
+            /**
+             * 내장 데이터 (원본과 동일)
+             */
+            getEmbeddedData() {
+                const csvData = `Alexander,Alice,Amanda,Andrew,Angela,Anna,Anthony,Ashley,Barbara,Benjamin,Betty,Brian,Carol,Charles,Christopher,Daniel,David,Deborah,Donald,Donna,Dorothy,Edward,Elizabeth,Emily,Emma,Eric,Frances,Frank,Gary,George,Helen,Henry,James,Jason,Jennifer,Jessica,John,Joseph,Joshua,Karen,Kimberly,Larry,Laura,Linda,Lisa,Margaret,Maria,Mark,Mary,Matthew,Michael,Michelle,Nancy,Nicole,Noah,Olivia,Patricia,Paul,Rachel,Rebecca,Richard,Robert,Ronald,Ruth,Sandra,Sarah,Scott,Sharon,Sophia,Stephen,Steven,Susan,Thomas,Timothy,Victoria,Virginia,Walter,Wayne,William,Abigail,Adam,Adrian,Albert,Andrea,Annie,Arthur,Austin,Brenda,Bruce,Carl,Catherine,Christine,Cynthia, Diane,Douglas,Eugene,Hannah,Harold,Isabella,Jack,Jacob,Jane,Janet,Jerry,Joan,Jonathan,Juan,Julie,Justin,Katherine,Keith,Kevin,Laura,Louis,Martha,Mason,Nathan,Noah,Peter,Ralph,Raymond,Roger,Ryan,Samantha,Sean,Shirley,Tyler,Virginia,Willie`;
+                
+                return csvData.split(',').map((name, index) => ({
+                    name: name.trim(),
+                    age: 25 + (index % 20),
+                    job: ['Engineer', 'Designer', 'Teacher', 'Manager', 'Developer'][index % 5],
+                    city: ['Seoul', 'Busan', 'Incheon', 'Daegu', 'Gwangju'][index % 5]
+                }));
+            }
+
+            /**
+             * 이벤트 리스너 설정
+             */
+            setupEventListeners() {
+                // 검색 입력 이벤트 (디바운싱 적용)
+                this.searchInput.addEventListener('input', (e) => {
+                    clearTimeout(this.searchTimeout);
+                    this.searchTimeout = setTimeout(() => {
+                        this.handleSearch(e.target.value);
+                    }, 150); // 150ms 디바운싱
+                });
+
+                // 키보드 네비게이션
+                this.searchInput.addEventListener('keydown', (e) => {
+                    this.handleKeyNavigation(e);
+                });
+
+                // 모달 닫기 이벤트
+                this.modalOverlay.addEventListener('click', (e) => {
+                    if (e.target === this.modalOverlay || e.target.classList.contains('modal-close')) {
+                        this.closeModal();
+                    }
+                });
+
+                // ESC 키로 모달 닫기
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && this.modalOverlay.classList.contains('show')) {
+                        this.closeModal();
+                    }
+                });
+            }
+
+            /**
+             * 검색 처리 (기존 DOM 재생성 문제 해결)
+             */
+            handleSearch(query) {
+                const startTime = performance.now();
+                this.currentQuery = query;
+                
+                // 검색 수행
+                this.filteredNames = this.searchNames(query);
+                
+                // 결과 렌더링 (DOM 재생성 없이)
+                this.renderResults();
+                this.updateAutocomplete(query);
+                
+                const endTime = performance.now();
+                this.showPerformanceMessage(`검색 완료: ${(endTime - startTime).toFixed(1)}ms`);
+            }
+
+            /**
+             * 효율적인 검색 알고리즘 (대용량 데이터 지원)
+             */
+            searchNames(query) {
+                if (!query.trim()) {
+                    return [];
+                }
+
+                const lowerQuery = query.toLowerCase();
+                const exactMatches = [];
+                const startMatches = [];
+                const containsMatches = [];
+
+                for (const person of this.names) {
+                    const name = person.name.toLowerCase();
+                    
+                    if (name === lowerQuery) {
+                        exactMatches.push(person);
+                    } else if (name.startsWith(lowerQuery)) {
+                        startMatches.push(person);
+                    } else if (name.includes(lowerQuery)) {
+                        containsMatches.push(person);
+                    }
+                    
+                    // 대용량 데이터 처리를 위한 결과 제한
+                    if (exactMatches.length + startMatches.length + containsMatches.length >= 100) {
+                        break;
+                    }
+                }
+
+                return [...exactMatches, ...startMatches, ...containsMatches].slice(0, 100);
+            }
+
+            /**
+             * 결과 렌더링 (DOM 재생성 없이 업데이트)
+             */
+            renderResults() {
+                // 기존 결과 제거
+                this.resultsList.innerHTML = '';
+                this.selectedIndex = -1;
+
+                if (this.filteredNames.length === 0) {
+                    const noResults = document.createElement('li');
+                    noResults.className = 'no-results';
+                    noResults.textContent = this.currentQuery.trim() ? '검색 결과가 없습니다' : '검색어를 입력해주세요';
+                    this.resultsList.appendChild(noResults);
+                    return;
+                }
+
+                // 결과 아이템 생성
+                this.filteredNames.forEach((person, index) => {
+                    const li = document.createElement('li');
+                    li.textContent = person.name;
+                    li.dataset.index = index;
+                    
+                    // 클릭 이벤트 추가 (상세 정보 표시)
+                    li.addEventListener('click', () => {
+                        this.showPersonDetail(person);
+                    });
+                    
+                    this.resultsList.appendChild(li);
+                });
+            }
+
+            /**
+             * 자동완성 업데이트
+             */
+            updateAutocomplete(query) {
+                this.autocompleteOverlay.innerHTML = '';
+                
+                if (query.length > 0 && this.filteredNames.length > 0) {
+                    const firstMatch = this.filteredNames[0].name;
+                    if (firstMatch.toLowerCase().startsWith(query.toLowerCase())) {
+                        const visiblePart = document.createElement('span');
+                        visiblePart.style.color = 'transparent';
+                        visiblePart.textContent = query;
+                        
+                        const hintPart = document.createElement('span');
+                        hintPart.className = 'autocomplete-hint';
+                        hintPart.textContent = firstMatch.slice(query.length);
+                        
+                        this.autocompleteOverlay.appendChild(visiblePart);
+                        this.autocompleteOverlay.appendChild(hintPart);
+                    }
+                }
+            }
+
+            /**
+             * 키보드 네비게이션 처리
+             */
+            handleKeyNavigation(e) {
+                const items = this.resultsList.querySelectorAll('li:not(.no-results)');
+                
+                switch (e.key) {
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        this.selectedIndex = Math.min(this.selectedIndex + 1, items.length - 1);
+                        this.updateSelection();
+                        break;
+                        
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        this.selectedIndex = Math.max(this.selectedIndex - 1, -1);
+                        this.updateSelection();
+                        break;
+                        
+                    case 'Enter':
+                        e.preventDefault();
+                        if (this.selectedIndex >= 0 && this.filteredNames[this.selectedIndex]) {
+                            this.showPersonDetail(this.filteredNames[this.selectedIndex]);
+                        }
+                        break;
+                        
+                    case 'Tab':
+                        if (this.autocompleteOverlay.textContent.trim()) {
+                            e.preventDefault();
+                            const hint = this.autocompleteOverlay.querySelector('.autocomplete-hint');
+                            if (hint) {
+                                this.searchInput.value = this.currentQuery + hint.textContent;
+                                this.handleSearch(this.searchInput.value);
+                            }
+                        }
+                        break;
+                }
+            }
+
+            /**
+             * 선택 상태 업데이트
+             */
+            updateSelection() {
+                const items = this.resultsList.querySelectorAll('li:not(.no-results)');
+                items.forEach((item, index) => {
+                    item.classList.toggle('selected', index === this.selectedIndex);
+                });
+            }
+
+            /**
+             * 개인 상세 정보 표시 (API 연동)
+             */
+            async showPersonDetail(person) {
+                this.modalOverlay.classList.add('show');
+                this.modalContent.innerHTML = '<div class="loading">정보를 불러오는 중입니다...</div>';
+                
+                try {
+                    // 모의 API 호출
+                    const detailInfo = await this.fetchPersonDetail(person);
+                    this.renderPersonDetail(detailInfo);
+                } catch (error) {
+                    console.error('상세 정보 로드 오류:', error);
+                    this.modalContent.innerHTML = '<p>정보를 불러오는 중 오류가 발생했습니다.</p>';
+                }
+            }
+
+            /**
+             * 모의 API - 개인 상세 정보 가져오기
+             */
+            async fetchPersonDetail(person) {
+                // API 호출 시뮬레이션 (300ms 지연)
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                // 추가 정보 생성
+                return {
+                    ...person,
+                    email: `${person.name.toLowerCase().replace(/\s+/g, '.')}@example.com`,
+                    phone: `010-${Math.floor(Math.random() * 9000) + 1000}-${Math.floor(Math.random() * 9000) + 1000}`,
+                    department: ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance'][Math.floor(Math.random() * 5)],
+                    joinDate: new Date(2020 + Math.floor(Math.random() * 4), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1).toLocaleDateString('ko-KR')
+                };
+            }
+
+            /**
+             * 개인 상세 정보 렌더링
+             */
+            renderPersonDetail(person) {
+                this.modalContent.innerHTML = `
+                    <div class="person-detail">
+                        <div class="detail-item">
+                            <div class="detail-icon">👤</div>
+                            <div class="detail-info">
+                                <div class="detail-label">이름</div>
+                                <div class="detail-value">${person.name}</div>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-icon">🎂</div>
+                            <div class="detail-info">
+                                <div class="detail-label">나이</div>
+                                <div class="detail-value">${person.age}세</div>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-icon">💼</div>
+                            <div class="detail-info">
+                                <div class="detail-label">직업</div>
+                                <div class="detail-value">${person.job}</div>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-icon">🏢</div>
+                            <div class="detail-info">
+                                <div class="detail-label">부서</div>
+                                <div class="detail-value">${person.department}</div>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-icon">🏙️</div>
+                            <div class="detail-info">
+                                <div class="detail-label">도시</div>
+                                <div class="detail-value">${person.city}</div>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-icon">📧</div>
+                            <div class="detail-info">
+                                <div class="detail-label">이메일</div>
+                                <div class="detail-value">${person.email}</div>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-icon">📱</div>
+                            <div class="detail-info">
+                                <div class="detail-label">전화번호</div>
+                                <div class="detail-value">${person.phone}</div>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-icon">📅</div>
+                            <div class="detail-info">
+                                <div class="detail-label">입사일</div>
+                                <div class="detail-value">${person.joinDate}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            /**
+             * 모달 닫기
+             */
+            closeModal() {
+                this.modalOverlay.classList.remove('show');
+                this.searchInput.focus();
+            }
+
+            /**
+             * 성능 메시지 표시
+             */
+            showPerformanceMessage(message) {
+                this.performanceInfo.textContent = message;
+                this.performanceInfo.classList.add('show');
+                
+                setTimeout(() => {
+                    this.performanceInfo.classList.remove('show');
+                }, 2000);
+            }
+        }
+
+        // 시스템 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            new ImprovedNameSearchSystem();
+        });
+    </script>
+</body>
+</html>
