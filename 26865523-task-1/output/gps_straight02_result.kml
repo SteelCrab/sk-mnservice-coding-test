@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>GPS Map Matching Result - gps_straight02.csv</name>
+    <Style id="originalGPS">
+      <IconStyle>
+        <color>ff0000ff</color>
+        <scale>0.6</scale>
+      </IconStyle>
+    </Style>
+    <Style id="normalMatch">
+      <IconStyle>
+        <color>ff00ff00</color>
+        <scale>0.6</scale>
+      </IconStyle>
+    </Style>
+    <Style id="offRoute">
+      <IconStyle>
+        <color>ff00ffff</color>
+        <scale>0.8</scale>
+      </IconStyle>
+    </Style>
+    <Style id="gpsError">
+      <IconStyle>
+        <color>ff0080ff</color>
+        <scale>0.7</scale>
+      </IconStyle>
+    </Style>
+    <Style id="referencePath">
+      <LineStyle>
+        <color>ffff0000</color>
+        <width>4</width>
+      </LineStyle>
+    </Style>
+    <Placemark>
+      <name>기준 경로</name>
+      <styleUrl>#referencePath</styleUrl>
+      <LineString>
+        <coordinates>
+          127.028743,37.4958431,0
+          127.0279245,37.4974989,0
+          127.0279245,37.4974989,0
+          127.0277302,37.4979234,0
+          127.0277302,37.4979234,0
+          127.0276806,37.4980478,0
+          127.0276806,37.4980478,0
+          127.0274875,37.4984961,0
+          127.0274875,37.4984961,0
+          127.0268379,37.4998762,0
+        </coordinates>
+      </LineString>
+    </Placemark>
+    <Placemark>
+      <name>GPS-1</name>
+      <description>원본 GPS 좌표</description>
+      <styleUrl>#originalGPS</styleUrl>
+      <Point>
+        <coordinates>127.028183,37.496783,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>GPS-2</name>
+      <description>원본 GPS 좌표</description>
+      <styleUrl>#originalGPS</styleUrl>
+      <Point>
+        <coordinates>127.028167,37.49695,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>GPS-3</name>
+      <description>원본 GPS 좌표</description>
+      <styleUrl>#originalGPS</styleUrl>
+      <Point>
+        <coordinates>127.028017,37.497167,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>GPS-4</name>
+      <description>원본 GPS 좌표</description>
+      <styleUrl>#originalGPS</styleUrl>
+      <Point>
+        <coordinates>127.028,37.497433,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>GPS-5</name>
+      <description>원본 GPS 좌표</description>
+      <styleUrl>#originalGPS</styleUrl>
+      <Point>
+        <coordinates>127.027783,37.497667,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>GPS-6</name>
+      <description>원본 GPS 좌표</description>
+      <styleUrl>#originalGPS</styleUrl>
+      <Point>
+        <coordinates>127.027717,37.497983,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>GPS-7</name>
+      <description>원본 GPS 좌표</description>
+      <styleUrl>#originalGPS</styleUrl>
+      <Point>
+        <coordinates>127.02755,37.498133,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>GPS-8</name>
+      <description>원본 GPS 좌표</description>
+      <styleUrl>#originalGPS</styleUrl>
+      <Point>
+        <coordinates>127.027533,37.49835,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>매칭-1</name>
+      <description>GPS 좌표가 도로에 성공적으로 매칭됨</description>
+      <styleUrl>#normalMatch</styleUrl>
+      <Point>
+        <coordinates>127.02811992204545,37.49709247098918,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>매칭-2</name>
+      <description>GPS 좌표가 도로에 성공적으로 매칭됨</description>
+      <styleUrl>#normalMatch</styleUrl>
+      <Point>
+        <coordinates>127.0279924477689,37.49735153276098,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>매칭-3</name>
+      <description>GPS 좌표가 도로에 성공적으로 매칭됨</description>
+      <styleUrl>#normalMatch</styleUrl>
+      <Point>
+        <coordinates>127.02796376058888,37.49741375041113,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>매칭-4</name>
+      <description>GPS 좌표가 도로에 성공적으로 매칭됨</description>
+      <styleUrl>#normalMatch</styleUrl>
+      <Point>
+        <coordinates>127.0279341392922,37.49747799400261,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>매칭-5</name>
+      <description>GPS 좌표가 도로에 성공적으로 매칭됨</description>
+      <styleUrl>#normalMatch</styleUrl>
+      <Point>
+        <coordinates>127.02784003658634,37.497683432779695,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>매칭-6</name>
+      <description>GPS 좌표가 도로에 성공적으로 매칭됨</description>
+      <styleUrl>#normalMatch</styleUrl>
+      <Point>
+        <coordinates>127.02770739752306,37.49798059008329,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>매칭-7</name>
+      <description>GPS 좌표가 도로에 성공적으로 매칭됨</description>
+      <styleUrl>#normalMatch</styleUrl>
+      <Point>
+        <coordinates>127.02765303755575,37.49813138087831,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>매칭-8</name>
+      <description>GPS 좌표가 도로에 성공적으로 매칭됨</description>
+      <styleUrl>#normalMatch</styleUrl>
+      <Point>
+        <coordinates>127.02754363595523,37.4983797575228,0</coordinates>
+      </Point>
+    </Placemark>
+  </Document>
+</kml>
